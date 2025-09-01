@@ -1,0 +1,138 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "KPI_ventas",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        -80
+      ],
+      "id": "13a5c272-8094-49d6-972e-b62a78940836",
+      "name": "Webhook",
+      "webhookId": "895524b3-10cf-4f80-90db-91b3811bff99",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) AS last_spend,\n    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) AS last_conversions,\n    ROUND(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END), 0), 2) AS last_CAC,\n    ROUND((SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) * 100) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END), 0), 2) AS last_ROAS,\n    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) AS prior_spend,\n    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) AS prior_conversions,\n    ROUND(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END), 0), 2) AS prior_CAC,\n    ROUND((SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) * 100) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END), 0), 2) AS prior_ROAS\nFROM ads_spend;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -16,
+        -80
+      ],
+      "id": "c44e0342-2c67-4223-a0da-dc66d16b259c",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "mySql": {
+          "id": "SZqIuhIZnIit8ISf",
+          "name": "MySQL account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = items[0].json;\n\nreturn [{\n  json: {\n    last: {\n      spend: parseFloat(r.last_spend) || 0,\n      conversions: parseInt(r.last_conversions) || 0,\n      CAC: r.last_CAC !== null ? parseFloat(r.last_CAC) : null,\n      ROAS: r.last_ROAS !== null ? parseFloat(r.last_ROAS) : null\n    },\n    prior: {\n      spend: parseFloat(r.prior_spend) || 0,\n      conversions: parseInt(r.prior_conversions) || 0,\n      CAC: r.prior_CAC !== null ? parseFloat(r.prior_CAC) : null,\n      ROAS: r.prior_ROAS !== null ? parseFloat(r.prior_ROAS) : null\n    },\n    generated_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -80
+      ],
+      "id": "413f3a15-51ef-4585-9785-6cc63ccecf9e",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "responseKey": ""
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        464,
+        -80
+      ],
+      "id": "95d207c5-d3da-46ed-824b-869b977f57ba",
+      "name": "Respond to Webhook",
+      "executeOnce": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14ae7978-3d08-41cd-9afc-2367cc32b3f0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f529ba99e07f749bf5cfefcaa9c91c365c1002c4d4d899f05f98eecbbca7919c"
+  },
+  "id": "rUxfk7QjQyZihxfA",
+  "tags": []
+}
