@@ -1,0 +1,10 @@
+SELECT
+    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) AS last_spend,
+    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) AS last_conversions,
+    ROUND(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END), 0), 2) AS last_CAC,
+    ROUND((SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) * 100) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END), 0), 2) AS last_ROAS,
+    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) AS prior_spend,
+    SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) AS prior_conversions,
+    ROUND(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END), 0), 2) AS prior_CAC,
+    ROUND((SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN conversions ELSE 0 END) * 100) / NULLIF(SUM(CASE WHEN date >= DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 60 DAY) AND date < DATE_SUB( (SELECT MAX(date) FROM ads_spend), INTERVAL 30 DAY) THEN spend ELSE 0 END), 0), 2) AS prior_ROAS
+FROM ads_spend;
